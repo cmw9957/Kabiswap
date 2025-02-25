@@ -6,7 +6,7 @@ contract KabiswapERC20 is IERC20 {
     string public constant _name = "Kabiswap";
     string public constant _symbol = "KST";
     uint8 public constant decimals = 18;
-    uint256 public immutable _totalSupply;
+    uint256 public _totalSupply;
 
     mapping(address => uint256) nonces; 
     mapping(address => uint) balances;
@@ -24,6 +24,16 @@ contract KabiswapERC20 is IERC20 {
     
     constructor() {
         _totalSupply = 1_000_000*(10**decimals);
+    }
+
+    function mint() external payable {
+        _totalSupply -= msg.value;
+        balances[msg.sender] += msg.value;
+    }
+
+    function burn(uint256 amount) external {
+        _totalSupply += amount;
+        balances[msg.sender] -= amount;
     }
 
     function totalSupply() external view returns (uint256){
