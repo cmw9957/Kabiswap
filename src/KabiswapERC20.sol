@@ -1,16 +1,16 @@
 pragma solidity >=0.8.10;
 
-import '../interfaces/IKabiERC20.sol';
+import '../interfaces/IERC20.sol';
 
-abstract contract KabiswapERC20 is IKabiERC20 {
+contract KabiswapERC20 is IERC20 {
     string public constant _name = "Kabiswap";
     string public constant _symbol = "KST";
     uint8 public constant decimals = 18;
-    uint256 public totalSupply = 1_000_000 * (10**decimals);
+    uint256 public immutable _totalSupply;
 
     mapping(address => uint256) nonces; 
     mapping(address => uint) balances;
-    mapping(address => mapping(address => uint)) allowance;
+    mapping(address => mapping(address => uint)) _allowance;
 
     bytes32 public DOMAIN_SEPARATOR = keccak256(
             abi.encode(
@@ -21,23 +21,17 @@ abstract contract KabiswapERC20 is IKabiERC20 {
                 address(this)
             )
         );
-
-    function name() external pure returns (string memory) {
-        return _name;
+    
+    constructor() {
+        _totalSupply = 1_000_000*(10**decimals);
     }
 
-    function symbol() external pure returns (string memory) {
-        return _symbol;
+    function totalSupply() external view returns (uint256){
+        return _totalSupply;
     }
 
-    function _approve(address owner, address spender, uint value) internal {
-        require(owner != address(0) || spender != address(0), "Zero address is not allowed.");
-        allowance[owner][spender] = value;
-    }
-
-    function approve(address spender, uint value) external returns (bool) {
-        _approve(msg.sender, spender, value);
-        return true;
+    function balanceOf(address account) external view returns (uint256) {
+        return balances[account];
     }
 
     function _transfer(address from, address to, uint value) internal {
@@ -51,10 +45,32 @@ abstract contract KabiswapERC20 is IKabiERC20 {
         return true;
     }
 
+    function allowance(address owner, address spender) external view returns (uint256) {
+        return _allowance[owner][spender];
+    }
+
+    function _approve(address owner, address spender, uint value) internal {
+        require(owner != address(0) || spender != address(0), "Zero address is not allowed.");
+        _allowance[owner][spender] = value;
+    }
+
+    function approve(address spender, uint value) external returns (bool) {
+        _approve(msg.sender, spender, value);
+        return true;
+    }
+
     function transferFrom(address from, address to, uint value) external returns (bool) {
-        require(allowance[from][msg.sender] > 0, "Not approved.");
+        require(_allowance[from][msg.sender] > 0, "Not approved.");
         _transfer(from, to, value);
         return true;
+    }
+
+    function name() external pure returns (string memory) {
+        return _name;
+    }
+
+    function symbol() external pure returns (string memory) {
+        return _symbol;
     }
 
     function permit(
