@@ -22,7 +22,7 @@ contract KabiswapERC20 is ERC20 {
         )
     );
 
-    constructor(string memory name_, string memory symbol_) ERC20(name_, symbol_) {
+    constructor() ERC20("Kabi Swap Token", "KST") {
         CAP = 1_000_000_000 * (10**decimals());
     }
 
