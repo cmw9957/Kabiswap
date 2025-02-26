@@ -89,6 +89,33 @@ contract KabiswapPool {
         LPToken.mint(msg.sender, lpTokens); // 유동성 제공자에게 LP 토큰 발행
     }
 
+    function removeLiquidity(uint256 lpTokens) external returns (uint256 amountKabi, uint256 amountUpside) {
+        require(lpTokens > 0, "LP tokens must be greater than zero.");
+        
+        uint256 totalLPsupply = LPToken.totalSupply();
+        require(totalLPsupply > 0, "No LP tokens in circulation.");
+
+        // 사용자가 반환할 LP 토큰 비율 계산
+        uint256 ratio = lpTokens / totalLPsupply;
+
+        // 반환할 Kabi와 Upside 양 계산
+        amountKabi = reserve0 * ratio;
+        amountUpside = reserve1 * ratio;
+
+        require(amountKabi > 0 && amountUpside > 0, "Invalid liquidity amounts");
+
+        // 유동성 공급자의 LP 토큰을 소각
+        LPToken.burn(msg.sender, lpTokens);
+
+        // 유동성 풀에서 Kabi와 Upside 반환
+        reserve0 -= amountKabi;
+        reserve1 -= amountUpside;
+
+        // 사용자가 반환받을 Kabi와 Upside 토큰 전송
+        kabiToken.transfer(msg.sender, amountKabi);
+        upsideToken.transfer(msg.sender, amountUpside);
+    }
+
     function sqrt(uint256 y) internal pure returns (uint256 z) {
         if (y > 3) {
             z = y;
