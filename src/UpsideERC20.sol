@@ -4,7 +4,9 @@ pragma solidity >=0.8.10;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract UpsideERC20 is ERC20 {
-    constructor() ERC20("Upside Pegging Token", "UPT") {}
+    constructor() ERC20("Upside Pegging Token", "UPT") {
+        _mint(msg.sender, 100 ether);
+    }
 
     function deposit() external payable {
         _mint(msg.sender, msg.value);
