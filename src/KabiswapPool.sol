@@ -9,7 +9,7 @@ import "./KabiLPtoken.sol";
 contract KabiswapPool {
     KabiswapERC20 public immutable kabiToken; // Kabiswap Token
     UpsideERC20 public immutable upsideToken; // Upside Token (ETH)
-    KabiLPtoken public immutable LPToken;
+    KabiLPtoken public immutable LPToken; // <========= KabiswapPool에서 컨트랙트 배포하기
 
 
     uint256 public reserve0; // 풀 내 Kabiswap Token 보유량
@@ -105,7 +105,7 @@ contract KabiswapPool {
         require(amountKabi > 0 && amountUpside > 0, "Invalid liquidity amounts");
 
         // 유동성 공급자의 LP 토큰을 소각
-        LPToken.burn(msg.sender, lpTokens);
+        LPToken.burn(lpTokens);
 
         // 유동성 풀에서 Kabi와 Upside 반환
         reserve0 -= amountKabi;

@@ -11,7 +11,7 @@ contract KabiLPtoken is ERC20 {
     }
 
     // 유동성 제거 시 호출되는 burn 함수
-    function burn(address from, uint256 amount) external {
-        _burn(from, amount);
+    function burn(uint256 amount) external {
+        _burn(msg.sender, amount);
     }
 }
