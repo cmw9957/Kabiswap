@@ -1,87 +1,39 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.10;
 
-import "../interfaces/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract KabiswapERC20 is IERC20 {
-    string public constant _name = "Kabiswap";
-    string public constant _symbol = "KST";
-    uint8 public constant decimals = 18;
-    uint256 public _totalSupply;
+contract KabiswapERC20 is ERC20 {
+    uint256 public immutable CAP;
+    address private owner;
+    address private beanDao;
+    address private tamaCasino;
 
     mapping(address => uint256) nonces;
-    mapping(address => uint256) balances;
     mapping(address => mapping(address => uint256)) _allowance;
 
     bytes32 public DOMAIN_SEPARATOR = keccak256(
         abi.encode(
             keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-            keccak256(bytes(_name)),
+            keccak256(bytes(name())),
             keccak256(bytes("1")),
             block.chainid,
             address(this)
         )
     );
 
-    constructor() {
-        _totalSupply = 1_000_000 * (10 ** decimals);
+    constructor(string memory name_, string memory symbol_) ERC20(name_, symbol_) {
+        CAP = 1_000_000_000 * (10**decimals());
     }
 
-    function mint() external payable {
-        _totalSupply -= msg.value;
-        balances[msg.sender] += msg.value;
+    function mint(address to, uint256 amount) external {
+        require(msg.sender == owner, "Not owner.");
+        require(amount + totalSupply() <= CAP, "Amount is over than total supply.");
+        _mint(to, amount);
     }
 
-    function burn(uint256 amount) external {
-        _totalSupply += amount;
-        balances[msg.sender] -= amount;
-    }
-
-    function totalSupply() external view returns (uint256) {
-        return _totalSupply;
-    }
-
-    function balanceOf(address account) external view returns (uint256) {
-        return balances[account];
-    }
-
-    function _transfer(address from, address to, uint256 value) internal {
-        require(balances[from] >= value, "Insufficient value.");
-        balances[from] -= value;
-        balances[to] += value;
-    }
-
-    function transfer(address to, uint256 value) external returns (bool) {
-        _transfer(msg.sender, to, value);
-        return true;
-    }
-
-    function allowance(address owner, address spender) external view returns (uint256) {
-        return _allowance[owner][spender];
-    }
-
-    function _approve(address owner, address spender, uint256 value) internal {
-        require(owner != address(0) || spender != address(0), "Zero address is not allowed.");
-        _allowance[owner][spender] = value;
-    }
-
-    function approve(address spender, uint256 value) external returns (bool) {
-        _approve(msg.sender, spender, value);
-        return true;
-    }
-
-    function transferFrom(address from, address to, uint256 value) external returns (bool) {
-        require(_allowance[from][msg.sender] > 0, "Not approved.");
-        _transfer(from, to, value);
-        return true;
-    }
-
-    function name() external pure returns (string memory) {
-        return _name;
-    }
-
-    function symbol() external pure returns (string memory) {
-        return _symbol;
+    function burn(address from, uint256 amount) external {
+        _burn(from, amount);
     }
 
     function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
