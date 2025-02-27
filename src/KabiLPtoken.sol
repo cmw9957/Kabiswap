@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract KabiLPtoken is ERC20, ERC20Permit, Ownable {
+    event Log(address);
     constructor() ERC20("Kabi Liquidity Pool Token", "KLT") Ownable(msg.sender) ERC20Permit("Kabi Liquidity Pool Token"){}
 
     function mint(address to, uint256 amount) external {
@@ -13,7 +14,7 @@ contract KabiLPtoken is ERC20, ERC20Permit, Ownable {
     }
 
     // 유동성 제거 시 호출되는 burn 함수
-    function burn(uint256 amount) external {
-        _burn(msg.sender, amount);
+    function burn(address account, uint256 amount) external {
+        _burn(account, amount);
     }
 }
