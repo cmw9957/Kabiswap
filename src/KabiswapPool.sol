@@ -128,6 +128,15 @@ contract KabiswapPool is Initializable {
         paused = !paused;
     }
 
+    function multicall(bytes[] calldata data) external returns (bool[] memory success, bytes[] memory returnData) {
+        success = new bool[](data.length);
+        returnData = new bytes[](data.length);
+
+        for (uint256 i = 0; i < data.length; i++) {
+            (success[i], returnData[i]) = address(this).delegatecall(data[i]);
+            require(success[i], "Multicall execution failed");
+        }
+    }
 
     function sqrt(uint256 y) internal pure returns (uint256 z) {
         if (y > 3) {
