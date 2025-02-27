@@ -7,6 +7,8 @@ import "./UpsideERC20.sol";
 import "./KabiLPtoken.sol";
 
 contract KabiswapPool is Initializable {
+    address DONT;
+    address USE;
     KabiswapERC20 public kabiToken; // Kabiswap Token
     UpsideERC20 public upsideToken; // Upside Token (ETH)
     KabiLPtoken public LPToken;
