@@ -13,6 +13,7 @@ contract KabiswapPool is Initializable {
     UpsideERC20 public upsideToken; // Upside Token (ETH)
     KabiLPtoken public LPToken;
     bool public paused; // 긴급 정지 상태
+    address owner;
 
     uint256 public reserve0; // 풀 내 Kabiswap Token 보유량
     uint256 public reserve1; // 풀 내 Upside Token 보유량
