@@ -7,6 +7,8 @@ import "./UpsideERC20.sol";
 import "./KabiLPtoken.sol";
 
 contract KabiswapPool is Initializable {
+    enum State { Active, Paused, Closed }
+    State public currentState;
     address DONT;
     address USE;
     KabiswapERC20 public kabiToken; // Kabiswap Token
@@ -28,13 +30,19 @@ contract KabiswapPool is Initializable {
         _;
     }
 
+    modifier inState(State expectedState) {
+        require(currentState == expectedState, "Invalid state for this action");
+        _;
+    }
+
     function initialize(address _token0, address _token1, address _token2) public initializer {
         kabiToken = KabiswapERC20(_token0);
         upsideToken = UpsideERC20(_token1);
         LPToken = KabiLPtoken(_token2);
+        currentState = State.Active;
     }
 
-    function swap(address tokenIn, uint256 amountIn) external returns (uint256 amountOut) {
+    function swap(address tokenIn, uint256 amountIn) external inState(State.Active) returns (uint256 amountOut) {
         require(amountIn > 0, "Swap amount must be greater than zero.");
         require(tokenIn == address(kabiToken) || tokenIn == address(upsideToken), "Invalid token");
 
@@ -64,7 +72,7 @@ contract KabiswapPool is Initializable {
         }
     }
 
-    function addLiquidity(uint256 amountKabi, uint256 amountUpside) external returns (uint256 lpTokens) {
+    function addLiquidity(uint256 amountKabi, uint256 amountUpside) external inState(State.Active) returns (uint256 lpTokens) {
         require(amountKabi > 0 && amountUpside > 0, "Invalid liquidity amounts");
 
         if (reserve0 == 0 || reserve1 == 0) {
@@ -100,7 +108,7 @@ contract KabiswapPool is Initializable {
         LPToken.mint(msg.sender, lpTokens); // 유동성 제공자에게 LP 토큰 발행
     }
 
-    function removeLiquidity(uint256 lpTokens) external returns (uint256 amountKabi, uint256 amountUpside) {
+    function removeLiquidity(uint256 lpTokens) external inState(State.Active) returns (uint256 amountKabi, uint256 amountUpside) {
         require(lpTokens > 0, "LP tokens must be greater than zero.");
         
         uint256 totalLPsupply = LPToken.totalSupply();
@@ -124,11 +132,15 @@ contract KabiswapPool is Initializable {
         upsideToken.transfer(msg.sender, amountUpside);
     }
 
-    function togglePause() external onlyOwner {
-        paused = !paused;
+    function pause() external onlyOwner inState(State.Active) {
+        currentState = State.Paused;
     }
 
-    function multicall(bytes[] calldata data) external returns (bool[] memory success, bytes[] memory returnData) {
+    function resume() external onlyOwner inState(State.Paused) {
+        currentState = State.Active;
+    }
+
+    function multicall(bytes[] calldata data) external inState(State.Active) returns (bool[] memory success, bytes[] memory returnData) {
         success = new bool[](data.length);
         returnData = new bytes[](data.length);
 
