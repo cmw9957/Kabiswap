@@ -20,8 +20,6 @@ contract KabiswapPool is Initializable {
     uint256 public constant FEE_RATE = 997; // 0.3% 수수료 (1000 - 3)
     uint256 public constant FEE_DENOMINATOR = 1000; // 수수료 분모
 
-    event Log(uint256);
-
     function initialize(address _token0, address _token1, address _token2) public initializer {
         kabiToken = KabiswapERC20(_token0);
         upsideToken = UpsideERC20(_token1);
@@ -107,7 +105,7 @@ contract KabiswapPool is Initializable {
         require(amountKabi > 0 && amountUpside > 0, "Invalid liquidity amounts");
 
         // 유동성 공급자의 LP 토큰을 소각
-        LPToken.burn(lpTokens);
+        LPToken.burn(msg.sender, lpTokens);
 
         // 유동성 풀에서 Kabi와 Upside 반환
         reserve0 -= amountKabi;
