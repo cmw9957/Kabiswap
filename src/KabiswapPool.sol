@@ -22,7 +22,7 @@ contract KabiswapPool is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     uint256 public constant FEE_RATE = 997; // 0.3% 수수료 (1000 - 3)
     uint256 public constant FEE_DENOMINATOR = 1000; // 수수료 분모
 
-    function initialize(address _token0, address _token1, address _token2) public initializer {
+    function initialize(address _token0, address _token1, address _token2) public initializer onlyProxy {
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
 
@@ -66,13 +66,26 @@ contract KabiswapPool is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     function addLiquidity(uint256 amountKabi, uint256 amountUpside) external returns (uint256 lpTokens) {
         require(amountKabi > 0 && amountUpside > 0, "Invalid liquidity amounts");
         
-        if (reserve0 > 0 && reserve1 > 0) {
+        if (reserve0 == 0 || reserve1 == 0) {
+             // 초기 유동성 공급 처리
+            lpTokens = sqrt(amountKabi * amountUpside);
+            require(lpTokens > 0, "Initial liquidity must be nonzero");
+        } else {
+            // 기존 유동성이 존재하는 경우, 비율 유지 확인
             uint256 idealAmountUpside = (reserve1 * amountKabi) / reserve0;
             require(
                 idealAmountUpside * 995 / 1000 <= amountUpside && amountUpside <= idealAmountUpside * 1005 / 1000,
                 "Liquidity proportion is off"
             );
+
+            // 기존 풀의 비율에 맞게 LP 토큰 계산
+            lpTokens = min(
+                (amountKabi * totalLPsupply) / reserve0,
+                (amountUpside * totalLPsupply) / reserve1
+            );
         }
+
+        require(lpTokens > 0, "LP token calculation error");
 
         // 토큰 전송 (사용자가 토큰을 보내도록 승인 필요)
         kabiToken.transferFrom(msg.sender, address(this), amountKabi);
