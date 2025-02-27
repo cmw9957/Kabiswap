@@ -20,6 +20,8 @@ contract KabiswapPool is Initializable {
     uint256 public constant FEE_RATE = 997; // 0.3% 수수료 (1000 - 3)
     uint256 public constant FEE_DENOMINATOR = 1000; // 수수료 분모
 
+    event Log(uint256);
+
     function initialize(address _token0, address _token1, address _token2) public initializer {
         kabiToken = KabiswapERC20(_token0);
         upsideToken = UpsideERC20(_token1);
@@ -58,7 +60,7 @@ contract KabiswapPool is Initializable {
 
     function addLiquidity(uint256 amountKabi, uint256 amountUpside) external returns (uint256 lpTokens) {
         require(amountKabi > 0 && amountUpside > 0, "Invalid liquidity amounts");
-        
+
         if (reserve0 == 0 || reserve1 == 0) {
              // 초기 유동성 공급 처리
             lpTokens = sqrt(amountKabi * amountUpside);
@@ -70,7 +72,7 @@ contract KabiswapPool is Initializable {
                 idealAmountUpside * 995 / 1000 <= amountUpside && amountUpside <= idealAmountUpside * 1005 / 1000,
                 "Liquidity proportion is off"
             );
-
+        }
         require(lpTokens > 0, "LP token calculation error");
 
         // 토큰 전송 (사용자가 토큰을 보내도록 승인 필요)
@@ -83,11 +85,13 @@ contract KabiswapPool is Initializable {
 
         // LP 토큰 계산 및 발행
         uint256 totalLPsupply = LPToken.totalSupply();
-        lpTokens = min((amountKabi * totalLPsupply) / reserve0, (amountUpside * totalLPsupply) / reserve1);
+        
+        if(totalLPsupply != 0) {
+            lpTokens = min((amountKabi * totalLPsupply) / reserve0, (amountUpside * totalLPsupply) / reserve1);
+        }
 
         require(lpTokens > 0, "LP token calculation error");
         LPToken.mint(msg.sender, lpTokens); // 유동성 제공자에게 LP 토큰 발행
-        }
     }
 
     function removeLiquidity(uint256 lpTokens) external returns (uint256 amountKabi, uint256 amountUpside) {
