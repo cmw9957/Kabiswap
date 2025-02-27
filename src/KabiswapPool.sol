@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.10;
 
-import "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
-import "../interfaces/IKabiswapPool.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "./KabiswapERC20.sol";
 import "./UpsideERC20.sol";
 import "./KabiLPtoken.sol";
 
-contract KabiswapPool is Initializable, UUPSUpgradeable, OwnableUpgradeable {
+contract KabiswapPool is Initializable {
     KabiswapERC20 public kabiToken; // Kabiswap Token
     UpsideERC20 public upsideToken; // Upside Token (ETH)
     KabiLPtoken public LPToken;
@@ -22,16 +20,11 @@ contract KabiswapPool is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     uint256 public constant FEE_RATE = 997; // 0.3% 수수료 (1000 - 3)
     uint256 public constant FEE_DENOMINATOR = 1000; // 수수료 분모
 
-    function initialize(address _token0, address _token1, address _token2) public initializer onlyProxy {
-        __Ownable_init(msg.sender);
-        __UUPSUpgradeable_init();
-
+    function initialize(address _token0, address _token1, address _token2) public initializer {
         kabiToken = KabiswapERC20(_token0);
         upsideToken = UpsideERC20(_token1);
         LPToken = KabiLPtoken(_token2);
     }
-
-    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     function swap(address tokenIn, uint256 amountIn) external returns (uint256 amountOut) {
         require(amountIn > 0, "Swap amount must be greater than zero.");
@@ -78,13 +71,6 @@ contract KabiswapPool is Initializable, UUPSUpgradeable, OwnableUpgradeable {
                 "Liquidity proportion is off"
             );
 
-            // 기존 풀의 비율에 맞게 LP 토큰 계산
-            lpTokens = min(
-                (amountKabi * totalLPsupply) / reserve0,
-                (amountUpside * totalLPsupply) / reserve1
-            );
-        }
-
         require(lpTokens > 0, "LP token calculation error");
 
         // 토큰 전송 (사용자가 토큰을 보내도록 승인 필요)
@@ -101,6 +87,7 @@ contract KabiswapPool is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
         require(lpTokens > 0, "LP token calculation error");
         LPToken.mint(msg.sender, lpTokens); // 유동성 제공자에게 LP 토큰 발행
+        }
     }
 
     function removeLiquidity(uint256 lpTokens) external returns (uint256 amountKabi, uint256 amountUpside) {
@@ -110,8 +97,8 @@ contract KabiswapPool is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         require(totalLPsupply > 0, "No LP tokens in circulation.");
 
         // 반환할 Kabi와 Upside 양 계산
-        amountKabi = (reserve0 * lpToken) / totalLPsupply;
-        amountUpside = (reserve1 * lpToken) / totalLPsupply;
+        amountKabi = (reserve0 * lpTokens) / totalLPsupply;
+        amountUpside = (reserve1 * lpTokens) / totalLPsupply;
 
         require(amountKabi > 0 && amountUpside > 0, "Invalid liquidity amounts");
 
