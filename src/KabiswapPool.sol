@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.10;
 
+import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../interfaces/IKabiswapPool.sol";
 import "./KabiswapERC20.sol";
 import "./UpsideERC20.sol";
 import "./KabiLPtoken.sol";
 
-contract KabiswapPool {
-    KabiswapERC20 public immutable kabiToken; // Kabiswap Token
-    UpsideERC20 public immutable upsideToken; // Upside Token (ETH)
-    KabiLPtoken public immutable LPToken; // <========= KabiswapPool에서 컨트랙트 배포하기
+contract KabiswapPool is Initializable, UUPSUpgradeable {
+    KabiswapERC20 public kabiToken; // Kabiswap Token
+    UpsideERC20 public upsideToken; // Upside Token (ETH)
+    KabiLPtoken public LPToken;
 
 
     uint256 public reserve0; // 풀 내 Kabiswap Token 보유량
@@ -20,7 +22,7 @@ contract KabiswapPool {
     uint256 public constant FEE_RATE = 997; // 0.3% 수수료 (1000 - 3)
     uint256 public constant FEE_DENOMINATOR = 1000; // 수수료 분모
 
-    constructor(address _token0, address _token1, address _token2) {
+    function initialize(address _token0, address _token1, address _token2) public initializer {
         kabiToken = KabiswapERC20(_token0);
         upsideToken = UpsideERC20(_token1);
         LPToken = KabiLPtoken(_token2);
@@ -33,6 +35,8 @@ contract KabiswapPool {
         uint256 initLPtoken = sqrt(reserve0 * reserve1); // 초기 유동성 LP 계산
         LPToken.mint(msg.sender, initLPtoken);
     }
+
+    function _authorizeUpgrade(address newImplementation) internal override {}
 
     function swap(address tokenIn, uint256 amountIn) external returns (uint256 amountOut) {
         require(amountIn > 0, "Swap amount must be greater than zero.");
