@@ -23,17 +23,12 @@ contract KabiswapPool is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     uint256 public constant FEE_DENOMINATOR = 1000; // 수수료 분모
 
     function initialize(address _token0, address _token1, address _token2) public initializer {
+        __Ownable_init(msg.sender);
+        __UUPSUpgradeable_init();
+
         kabiToken = KabiswapERC20(_token0);
         upsideToken = UpsideERC20(_token1);
         LPToken = KabiLPtoken(_token2);
-
-        kabiToken.transfer(address(this), 100_000 ether);
-        upsideToken.transfer(address(this), 100 ether);
-
-        reserve0 = 100_000 ether;
-        reserve1 = 100 ether;
-        uint256 initLPtoken = sqrt(reserve0 * reserve1); // 초기 유동성 LP 계산
-        LPToken.mint(msg.sender, initLPtoken);
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
@@ -45,9 +40,9 @@ contract KabiswapPool is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         bool isKabiToUpside = (tokenIn == address(kabiToken));
         (uint256 reserveInput, uint256 reserveOutput) = isKabiToUpside ? (reserve0, reserve1) : (reserve1, reserve0);
 
-        uint256 amountInWithFee = (amountIn * FEE_RATE) / FEE_DENOMINATOR;
+        uint256 amountInWithFee = (amountIn * FEE_RATE) / FEE_DENOMINATOR; // 수수료를 제외한 토큰 양
 
-        uint256 newReserveInput = reserveInput + amountInWithFee;
+        uint256 newReserveInput = reserveInput + amountInWithFee; // input token 양과 수수료를 제외한 토큰 양을 더함
         uint256 newReserveOutput = (reserveInput * reserveOutput) / newReserveInput;
         amountOut = reserveOutput - newReserveOutput; // 0.3% 수수료가 적용된 상태
 
@@ -71,10 +66,12 @@ contract KabiswapPool is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     function addLiquidity(uint256 amountKabi, uint256 amountUpside) external returns (uint256 lpTokens) {
         require(amountKabi > 0 && amountUpside > 0, "Invalid liquidity amounts");
         
-        // 풀에 기존 유동성이 있다면, 비율에 맞게 공급해야 함
         if (reserve0 > 0 && reserve1 > 0) {
-            // kabiToken's reserve * upsideTokenIn == upsideToken's reserve * kabiTokenIn
-            require(reserve0 * amountUpside == reserve1 * amountKabi, "Unbalanced liquidity");
+            uint256 idealAmountUpside = (reserve1 * amountKabi) / reserve0;
+            require(
+                idealAmountUpside * 995 / 1000 <= amountUpside && amountUpside <= idealAmountUpside * 1005 / 1000,
+                "Liquidity proportion is off"
+            );
         }
 
         // 토큰 전송 (사용자가 토큰을 보내도록 승인 필요)
@@ -99,12 +96,9 @@ contract KabiswapPool is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         uint256 totalLPsupply = LPToken.totalSupply();
         require(totalLPsupply > 0, "No LP tokens in circulation.");
 
-        // 사용자가 반환할 LP 토큰 비율 계산
-        uint256 ratio = lpTokens / totalLPsupply;
-
         // 반환할 Kabi와 Upside 양 계산
-        amountKabi = reserve0 * ratio;
-        amountUpside = reserve1 * ratio;
+        amountKabi = (reserve0 * lpToken) / totalLPsupply;
+        amountUpside = (reserve1 * lpToken) / totalLPsupply;
 
         require(amountKabi > 0 && amountUpside > 0, "Invalid liquidity amounts");
 
