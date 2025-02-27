@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.10;
 
+import "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../interfaces/IKabiswapPool.sol";
 import "./KabiswapERC20.sol";
 import "./UpsideERC20.sol";
 import "./KabiLPtoken.sol";
 
-contract KabiswapPool is Initializable, UUPSUpgradeable {
+contract KabiswapPool is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     KabiswapERC20 public kabiToken; // Kabiswap Token
     UpsideERC20 public upsideToken; // Upside Token (ETH)
     KabiLPtoken public LPToken;
@@ -36,7 +36,7 @@ contract KabiswapPool is Initializable, UUPSUpgradeable {
         LPToken.mint(msg.sender, initLPtoken);
     }
 
-    function _authorizeUpgrade(address newImplementation) internal override {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     function swap(address tokenIn, uint256 amountIn) external returns (uint256 amountOut) {
         require(amountIn > 0, "Swap amount must be greater than zero.");
