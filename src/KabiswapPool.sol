@@ -12,7 +12,7 @@ contract KabiswapPool is Initializable {
     KabiswapERC20 public kabiToken; // Kabiswap Token
     UpsideERC20 public upsideToken; // Upside Token (ETH)
     KabiLPtoken public LPToken;
-
+    bool public paused; // 긴급 정지 상태
 
     uint256 public reserve0; // 풀 내 Kabiswap Token 보유량
     uint256 public reserve1; // 풀 내 Upside Token 보유량
@@ -21,6 +21,11 @@ contract KabiswapPool is Initializable {
 
     uint256 public constant FEE_RATE = 997; // 0.3% 수수료 (1000 - 3)
     uint256 public constant FEE_DENOMINATOR = 1000; // 수수료 분모
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Not the contract owner");
+        _;
+    }
 
     function initialize(address _token0, address _token1, address _token2) public initializer {
         kabiToken = KabiswapERC20(_token0);
@@ -117,6 +122,11 @@ contract KabiswapPool is Initializable {
         kabiToken.transfer(msg.sender, amountKabi);
         upsideToken.transfer(msg.sender, amountUpside);
     }
+
+    function togglePause() external onlyOwner {
+        paused = !paused;
+    }
+
 
     function sqrt(uint256 y) internal pure returns (uint256 z) {
         if (y > 3) {
