@@ -312,11 +312,37 @@ contract KabiswapPoolTest is Test {
         proxy.call(abi.encodeWithSignature("pause()"));
         (, bytes memory pausedState) = proxy.call(abi.encodeWithSignature("currentState()"));
         assertEq(abi.decode(pausedState, (uint256)), 1, "Contract should be paused");
+        vm.stopPrank();
+
+        vm.startPrank(address(user));
+
+        uint256 amountKabi = 500 * 10 ** 18;
+        uint256 amountUpside = 500 * 10 ** 18;
+
+        kabiToken.approve(proxy, amountKabi * 2);
+        upsideToken.approve(proxy, amountUpside * 2);
+
+        bytes[] memory calls = new bytes[](2);
+        calls[0] = abi.encodeWithSignature(addLiquiditySignature, amountKabi, amountUpside);
+        calls[1] = abi.encodeWithSignature(swapSignature, address(kabiToken), 100 * 10 ** 18);
+
+        (bool success, bytes memory returnData) = proxy.call(abi.encodeWithSignature("multicall(bytes[])", calls));
+
+        vm.startPrank(address(proxyContract));
 
         // Resume contract
         proxy.call(abi.encodeWithSignature("resume()"));
         (, bytes memory resumedState) = proxy.call(abi.encodeWithSignature("currentState()"));
         assertEq(abi.decode(resumedState, (uint256)), 0, "Contract should be active again");
+
+        vm.stopPrank();
+
+        vm.startPrank(address(user));
+
+        calls[0] = abi.encodeWithSignature(addLiquiditySignature, amountKabi, amountUpside);
+        calls[1] = abi.encodeWithSignature(swapSignature, address(kabiToken), 100 * 10 ** 18);
+
+        (bool success2, bytes memory returnData2) = proxy.call(abi.encodeWithSignature("multicall(bytes[])", calls));
 
         vm.stopPrank();
     }
