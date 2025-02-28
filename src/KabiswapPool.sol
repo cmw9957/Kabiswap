@@ -7,10 +7,10 @@ import "./UpsideERC20.sol";
 import "./KabiLPtoken.sol";
 
 contract KabiswapPool is Initializable {
-    enum State { Active, Paused }
-    State public currentState;
     address DONT;
     address USE;
+    enum State { Active, Paused }
+    State public currentState;
     KabiswapERC20 public kabiToken; // Kabiswap Token
     UpsideERC20 public upsideToken; // Upside Token (ETH)
     KabiLPtoken public LPToken;
