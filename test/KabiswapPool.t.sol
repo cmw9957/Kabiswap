@@ -17,8 +17,13 @@ contract KabiswapPoolTest is Test {
     KabiLPtoken public LPToken;
     SwapProxy public proxyContract;
 
+    string addLiquiditySignature = "addLiquidity(uint256,uint256)";
+    string swapSignature = "swap(address,uint256)";
+    string removeLiquidity = "removeLiquidity(uint256)";
+
     address public user;
     address public user2;
+    address public proxy;
 
     event Log(address);
 
@@ -37,6 +42,8 @@ contract KabiswapPoolTest is Test {
         pool.initialize(address(kabiToken), address(upsideToken), address(LPToken));
         proxyContract = new SwapProxy(address(pool), address(kabiToken), address(upsideToken), address(LPToken));
 
+        proxy = proxyContract.proxy();
+
         // KabiswapPool에서 사용할 ERC20 토큰을 사용자에게 배포
         kabiToken.mint(user, 1000 * 10 ** 18);
         vm.startPrank(user);
@@ -46,23 +53,6 @@ contract KabiswapPoolTest is Test {
         kabiToken.mint(user2, 1000 * 10 ** 18);
         vm.startPrank(user2);
         upsideToken.deposit{value: 1000 ether}();  // 1 ether를 보내면서 deposit 호출
-        vm.stopPrank();
-    }
-
-    function testProxyInitialize() public {
-        vm.startPrank(user);
-
-        pool = new KabiswapPool();
-
-        proxyContract = new SwapProxy(address(pool), address(kabiToken), address(upsideToken), address(LPToken));
-
-        // bytes memory data = abi.encodeWithSignature(
-        //     "addLiquidity(uint256,uint256)", 
-        //     1, 2
-        // );
-
-        // address(proxyContract.proxy()).call(data);
-        
         vm.stopPrank();
     }
 
@@ -77,13 +67,11 @@ contract KabiswapPoolTest is Test {
         upsideToken.approve(proxyContract.proxy(), amountUpside);
 
         // pool.addLiquidity(amountKabi, amountUpside);
-        bytes memory data = abi.encodeWithSignature(
-            "addLiquidity(uint256,uint256)", 
+        proxy.call(abi.encodeWithSignature(
+            addLiquiditySignature, 
             amountKabi,
             amountUpside
-        );
-
-        address(proxyContract.proxy()).call(data);
+        ));
 
         vm.stopPrank();
 
@@ -92,8 +80,8 @@ contract KabiswapPoolTest is Test {
 
         // uint256 initialReserveKabi = pool.reserve0();
         // uint256 initialReserveUpside = pool.reserve1();
-        (, bytes memory initialReserveKabi) = address(proxyContract.proxy()).call(abi.encodeWithSignature("reserve0()"));
-        (, bytes memory initialReserveUpside) = address(proxyContract.proxy()).call(abi.encodeWithSignature("reserve1()"));
+        (, bytes memory initialReserveKabi) = proxy.call(abi.encodeWithSignature("reserve0()"));
+        (, bytes memory initialReserveUpside) = proxy.call(abi.encodeWithSignature("reserve1()"));
 
         kabiToken.balanceOf(user2);
 
@@ -102,15 +90,14 @@ contract KabiswapPoolTest is Test {
 
         // swap 실행
         // uint256 amountOut = pool.swap(address(kabiToken), amountIn);
-        data = abi.encodeWithSignature(
-            "swap(address,uint256)", 
+        (, bytes memory amountOut) = proxy.call(abi.encodeWithSignature(
+            swapSignature, 
             address(kabiToken),
             amountIn
-        );
-        (, bytes memory amountOut) = address(proxyContract.proxy()).call(data);
+        ));
 
-        (, bytes memory finalReserveKabi) = address(proxyContract.proxy()).call(abi.encodeWithSignature("reserve0()"));
-        (, bytes memory finalReserveUpside) = address(proxyContract.proxy()).call(abi.encodeWithSignature("reserve1()"));
+        (, bytes memory finalReserveKabi) = proxy.call(abi.encodeWithSignature("reserve0()"));
+        (, bytes memory finalReserveUpside) = proxy.call(abi.encodeWithSignature("reserve1()"));
 
         kabiToken.balanceOf(user2);
         upsideToken.balanceOf(user2);
@@ -132,13 +119,11 @@ contract KabiswapPoolTest is Test {
         upsideToken.approve(proxyContract.proxy(), amountUpside);
 
         // pool.addLiquidity(amountKabi, amountUpside);
-        bytes memory data = abi.encodeWithSignature(
-            "addLiquidity(uint256,uint256)", 
+        proxy.call(abi.encodeWithSignature(
+            addLiquiditySignature, 
             amountKabi,
             amountUpside
-        );
-
-        address(proxyContract.proxy()).call(data);
+        ));
 
         vm.stopPrank();
 
@@ -147,25 +132,24 @@ contract KabiswapPoolTest is Test {
 
         // uint256 initialReserveKabi = pool.reserve0();
         // uint256 initialReserveUpside = pool.reserve1();
-        (, bytes memory initialReserveKabi) = address(proxyContract.proxy()).call(abi.encodeWithSignature("reserve0()"));
-        (, bytes memory initialReserveUpside) = address(proxyContract.proxy()).call(abi.encodeWithSignature("reserve1()"));
+        (, bytes memory initialReserveKabi) = proxy.call(abi.encodeWithSignature("reserve0()"));
+        (, bytes memory initialReserveUpside) = proxy.call(abi.encodeWithSignature("reserve1()"));
 
         kabiToken.approve(proxyContract.proxy(), amountKabi);
         upsideToken.approve(proxyContract.proxy(), amountUpside);
 
         // swap 실행
         // uint256 amountOut = pool.swap(address(upsideToken), amountIn);
-        data = abi.encodeWithSignature(
-            "swap(address,uint256)", 
+        (, bytes memory amountOut) = proxy.call(abi.encodeWithSignature(
+            swapSignature, 
             address(upsideToken),
             amountIn
-        );
-        (, bytes memory amountOut) = address(proxyContract.proxy()).call(data);
+        ));
 
         // uint256 finalReserveKabi = pool.reserve0();
         // uint256 finalReserveUpside = pool.reserve1();
-        (, bytes memory finalReserveKabi) = address(proxyContract.proxy()).call(abi.encodeWithSignature("reserve0()"));
-        (, bytes memory finalReserveUpside) = address(proxyContract.proxy()).call(abi.encodeWithSignature("reserve1()"));
+        (, bytes memory finalReserveKabi) = proxy.call(abi.encodeWithSignature("reserve0()"));
+        (, bytes memory finalReserveUpside) = proxy.call(abi.encodeWithSignature("reserve1()"));
 
         kabiToken.balanceOf(user2);
         upsideToken.balanceOf(user2);
@@ -191,12 +175,11 @@ contract KabiswapPoolTest is Test {
 
         // addLiquidity 실행
         // pool.addLiquidity(amountKabi, amountUpside);
-        bytes memory data = abi.encodeWithSignature(
-            "addLiquidity(uint256,uint256)", 
+        proxy.call(abi.encodeWithSignature(
+            addLiquiditySignature, 
             amountKabi,
             amountUpside
-        );
-        address(proxyContract.proxy()).call(data);
+        ));
 
         uint256 lpTokensAfter = LPToken.balanceOf(user);
 
@@ -217,12 +200,11 @@ contract KabiswapPoolTest is Test {
 
         // 유동성 추가
         // pool.addLiquidity(amountKabi, amountUpside);
-        bytes memory data = abi.encodeWithSignature(
-            "addLiquidity(uint256,uint256)", 
+        proxy.call(abi.encodeWithSignature(
+            addLiquiditySignature, 
             amountKabi,
             amountUpside
-        );
-        address(proxyContract.proxy()).call(data);
+        ));
 
         uint256 lpTokens = LPToken.balanceOf(user);
 
@@ -231,11 +213,10 @@ contract KabiswapPoolTest is Test {
         uint256 initialUpsideBalance = upsideToken.balanceOf(user);
 
         // pool.removeLiquidity(lpTokens);
-        data = abi.encodeWithSignature(
-            "removeLiquidity(uint256)", 
+        proxy.call(abi.encodeWithSignature(
+            removeLiquidity, 
             lpTokens
-        );
-        address(proxyContract.proxy()).call(data);
+        ));
 
         uint256 finalKabiBalance = kabiToken.balanceOf(user);
         uint256 finalUpsideBalance = upsideToken.balanceOf(user);
@@ -258,12 +239,11 @@ contract KabiswapPoolTest is Test {
         upsideToken.approve(proxyContract.proxy(), amountUpside);
 
         // pool.addLiquidity(amountKabi, amountUpside);
-        bytes memory data = abi.encodeWithSignature(
-            "addLiquidity(uint256,uint256)", 
+        proxy.call(abi.encodeWithSignature(
+            addLiquiditySignature, 
             amountKabi,
             amountUpside
-        );
-        address(proxyContract.proxy()).call(data);
+        ));
 
         vm.stopPrank();
 
@@ -275,15 +255,13 @@ contract KabiswapPoolTest is Test {
         kabiToken.approve(proxyContract.proxy(), amountKabi2);
         upsideToken.approve(proxyContract.proxy(), amountUpside2);
 
-        data = abi.encodeWithSignature(
-            "addLiquidity(uint256,uint256)", 
+        // 비율이 맞지 않으므로 예외가 발생해야 합니다.
+        // pool.addLiquidity(amountKabi2, amountUpside2);
+        (bool success, ) = proxy.call(abi.encodeWithSignature(
+            addLiquiditySignature, 
             amountKabi2,
             amountUpside2
-        );
-        // 비율이 맞지 않으므로 예외가 발생해야 합니다.
-        // vm.expectRevert("Liquidity proportion is off");
-        // pool.addLiquidity(amountKabi2, amountUpside2);
-        (bool success, ) = address(proxyContract.proxy()).call(data);
+        ));
         require(!success, "Call to proxy contract successed");
         vm.stopPrank();
     }
@@ -293,11 +271,10 @@ contract KabiswapPoolTest is Test {
         uint256 invalidAmount = 0;
 
         // pool.swap(address(kabiToken), invalidAmount);
-        bytes memory data = abi.encodeWithSignature(
-            "swap(uint256)", 
+        (bool success, ) = proxy.call(abi.encodeWithSignature(
+            swapSignature, 
             invalidAmount
-        );
-        (bool success, ) = address(proxyContract.proxy()).call(data);
+        ));
         require(!success, "failed");
     }
 }
