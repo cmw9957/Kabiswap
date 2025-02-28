@@ -19,7 +19,7 @@ define run_test
 		exit 1; \
 	fi
 	@echo "Running test: $(S) on $(RPC_URL)"; \
-	forge test -vvvvv test/$(S).t.sol --rpc-url $(RPC_URL)
+	forge test -vvvvv test/$(S).t.sol --rpc-url $(RPC_URL) $(ARGS)
 endef
 
 .PHONY: solve simulate_local simulate_remote test
