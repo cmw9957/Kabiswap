@@ -39,6 +39,7 @@ contract KabiswapPool is Initializable {
         upsideToken = UpsideERC20(_token1);
         LPToken = KabiLPtoken(_token2);
         currentState = State.Active;
+        owner = msg.sender;
     }
 
     function swap(address tokenIn, uint256 amountIn) external inState(State.Active) returns (uint256 amountOut) {
