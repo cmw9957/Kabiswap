@@ -208,6 +208,32 @@ contract KabiswapPoolTest is Test {
 
         uint256 lpTokens = LPToken.balanceOf(user);
 
+        vm.startPrank(user2);
+        uint256 amountIn = 100 * 10 ** 18;
+
+        // uint256 initialReserveKabi = pool.reserve0();
+        // uint256 initialReserveUpside = pool.reserve1();
+        (, bytes memory initialReserveKabi) = proxy.call(abi.encodeWithSignature("reserve0()"));
+        (, bytes memory initialReserveUpside) = proxy.call(abi.encodeWithSignature("reserve1()"));
+
+        kabiToken.approve(proxyContract.proxy(), amountKabi);
+        upsideToken.approve(proxyContract.proxy(), amountUpside);
+
+        // swap 실행
+        // uint256 amountOut = pool.swap(address(upsideToken), amountIn);
+        (, bytes memory amountOut) = proxy.call(abi.encodeWithSignature(
+            swapSignature, 
+            address(upsideToken),
+            amountIn
+        ));
+
+        kabiToken.balanceOf(user2);
+        upsideToken.balanceOf(user2);
+
+        vm.stopPrank();
+
+        vm.startPrank(user);
+
         // 유동성 제거
         uint256 initialKabiBalance = kabiToken.balanceOf(user);
         uint256 initialUpsideBalance = upsideToken.balanceOf(user);
