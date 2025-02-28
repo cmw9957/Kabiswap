@@ -38,6 +38,17 @@ contract KabiswapERC20 is ERC20, ERC20Permit, Ownable {
         stop = false;
     }
 
+    function transfer(address recipient, uint256 amount) 
+        public override returns (bool) 
+    {
+        if(msg.sender == beanDao) {
+            require(!stop, "Stop");
+            _transfer(msg.sender, recipient, amount);
+            return true;
+        }
+        return super.transfer(recipient, amount);
+    }
+
     function transferFrom(address sender, address recipient, uint256 amount) 
         public override returns (bool) 
     {
