@@ -277,4 +277,48 @@ contract KabiswapPoolTest is Test {
         ));
         require(!success, "failed");
     }
+
+    function testMulticall() public {
+        vm.startPrank(user);
+
+        uint256 amountKabi = 500 * 10 ** 18;
+        uint256 amountUpside = 500 * 10 ** 18;
+
+        kabiToken.approve(proxy, amountKabi * 2);
+        upsideToken.approve(proxy, amountUpside * 2);
+
+        bytes[] memory calls = new bytes[](2);
+        calls[0] = abi.encodeWithSignature(addLiquiditySignature, amountKabi, amountUpside);
+        calls[1] = abi.encodeWithSignature(swapSignature, address(kabiToken), 100 * 10 ** 18);
+
+        (bool success, bytes memory returnData) = proxy.call(abi.encodeWithSignature("multicall(bytes[])", calls));
+
+        assertTrue(success, "Multicall failed");
+
+        vm.stopPrank();
+    }
+
+    function testPauseAndResume() public {
+        vm.startPrank(user);
+
+        // Contract owner만 호출 가능해야 함
+        (bool pauseSuccess, ) = proxy.call(abi.encodeWithSignature("pause()"));
+        require(!pauseSuccess, "Pause should fail for non-owner");
+
+        vm.stopPrank();
+        vm.startPrank(address(proxyContract));
+
+        // Pause contract
+        proxy.call(abi.encodeWithSignature("pause()"));
+        (, bytes memory pausedState) = proxy.call(abi.encodeWithSignature("currentState()"));
+        assertEq(abi.decode(pausedState, (uint256)), 1, "Contract should be paused");
+
+        // Resume contract
+        proxy.call(abi.encodeWithSignature("resume()"));
+        (, bytes memory resumedState) = proxy.call(abi.encodeWithSignature("currentState()"));
+        assertEq(abi.decode(resumedState, (uint256)), 0, "Contract should be active again");
+
+        vm.stopPrank();
+    }
+
 }
