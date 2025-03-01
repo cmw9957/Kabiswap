@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract UpsideERC20 is ERC20, ERC20Permit, Ownable {
-    constructor() ERC20("Upside Pegging Token", "UPT") Ownable(msg.sender) ERC20Permit("Kabi Liquidity Pool Token") {
+    constructor() ERC20("Upside Pegging Token", "UPT") Ownable(msg.sender) ERC20Permit("Upside Pegging Token") {
         _mint(msg.sender, 100 ether);
     }
 

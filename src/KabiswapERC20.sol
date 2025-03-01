@@ -12,7 +12,7 @@ contract KabiswapERC20 is ERC20, ERC20Permit, Ownable {
 
     constructor() ERC20("Kabi Swap Token", "KST") Ownable(msg.sender) ERC20Permit("Kabi Swap Token") {
         CAP = 1_000_000_000 ether;
-        _mint(msg.sender, 100_000 ether);
+        _mint(msg.sender, 10_000_000 ether);
     }
 
     function setDao(address dao) public onlyOwner {

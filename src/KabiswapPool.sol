@@ -65,7 +65,7 @@ contract KabiswapPool is Initializable {
             reserve1 -= amountOut;
         } else {
             upsideToken.transferFrom(msg.sender, address(this), amountIn);
-
+            
             kabiToken.transfer(msg.sender, amountOut);
             reserve1 += amountIn;
             reserve0 -= amountOut;
