@@ -15,7 +15,7 @@ contract UpsideERC20 is ERC20, ERC20Permit, Ownable {
     }
 
     function withdraw(uint256 amount) external payable {
-        require(balanceOf(msg.sender) > amount, "Amount is insufficient.");
+        require(balanceOf(msg.sender) >= amount, "Amount is insufficient.");
         _burn(msg.sender, amount);
         payable(address(msg.sender)).transfer(amount);
     }

@@ -34,7 +34,7 @@ contract KabiswapPool is Initializable {
         _;
     }
 
-    function initialize(address _token0, address _token1, address _token2) public initializer {
+    function initialize(address _token0, address _token1, address _token2) public {
         kabiToken = KabiswapERC20(_token0);
         upsideToken = UpsideERC20(_token1);
         LPToken = KabiLPtoken(_token2);
